@@ -9,6 +9,7 @@ Created on Thu May 17 10:56:45 2018
 
 import copy
 import sys
+import math
 
 import time
 y = time.time()
@@ -107,7 +108,7 @@ def scoreIndexList(List):
                 negIndexJ = 2.5
             else:
                 negIndexJ = negIndex
-            scoreIndex = float(abs(4 ** (twoIndex - negIndexJ) + 0.8 * negIndex - 0.5 * zeroIndex))
+            scoreIndex = float(abs(5 ** (twoIndex - negIndexJ) + 0.9 * negIndex - 0.8 * zeroIndex))
             for indexListi in range(i, i_test):
                 indexList[indexListi] = int(scoreIndex * 10)
     scoreList = list(map(lambda l, L: l * L, List, indexList))
@@ -185,9 +186,12 @@ def scoreBoard(Row, Col, Dia, Ada):
     return sB
 
 # Calculate the score based on the score board.
-def score(scoreBoard):
+def score(ogBoard, size):
+    reArr = rearrange(ogBoard, size)
+    sB = scoreBoard(reArr.Row(), reArr.Col(), reArr.Dia(), reArr.Ada())
+    del reArr
     score_L = []
-    for scoreL in scoreBoard:
+    for scoreL in sB:
         for scores in scoreL:
             score_L.append(scores)
     scoreL_noZero = list(filter((0).__ne__, score_L))
@@ -196,7 +200,7 @@ def score(scoreBoard):
     return pos_score + neg_score
 
 # Create new lists based on the next possible move.
-def nextStep(boardStructure, side):
+def nBoards(boardStructure, side):
     zeroPos = []
     nextBoards = []
     for bSi in range(len(boardStructure)):
@@ -214,22 +218,41 @@ def nextStep(boardStructure, side):
     return nextBoards    
 
 # Recessive calls to find the next step.
-def nextMove(OGboard, depth, side, size):
-    if depth > 0:
-        boards = nextStep(OGboard, side)
-        scoreList = []
-        for board in boards:
-            boardScore = nextMove(board, depth - 1, side * (-1), size)
-            scoreList.append(boardScore)
-        if side == 1:
-            return max(scoreList)
-        elif side == -1:
-            return min(scoreList)
+def nextStep(board, depth, side, size):
+    if depth > 2:
+        nextBoard = nBoards(board, side)
+        boardScore = []
+        for next_board in nextBoard:
+            boardScore.append(nextStep(next_board, depth - 1, side * -1, size))
+        if side > 0:
+            return max(boardScore)
+        else:
+            return min(boardScore)
+    elif depth == 2:
+        global scoreStandard
+        scoreStandard = -math.inf
+        nextBoard = nBoards(board, side)
+        for next_board in nextBoard:
+            nextStep(next_board, depth - 1, side * -1, size)
+        return scoreStandard
     else:
-        reArr = rearrange(OGboard, size)
-        sB = scoreBoard(reArr.Row(), reArr.Col(), reArr.Dia(), reArr.Ada())
-        del reArr
-        return score(sB)
+        if scoreStandard == -math.inf:
+            boardScore = []
+            nextBoard = nBoards(board, side)
+            for next_board in nextBoard:
+                boardScore.append(score(next_board, size))
+            scoreStandard = max(boardScore)
+        else:
+            boardScore = []
+            nextBoard = nBoards(board, side)
+            for nBi in range(len(nextBoard)):
+                sC_t = score(nextBoard[nBi], size)
+                if sC_t >= scoreStandard:
+                    break
+                else:
+                    boardScore.append(sC_t)
+            if len(boardScore) == len(nextBoard):
+                scoreStandard = max(boardScore)
 
 ''' 15 * 15
 boardStructure = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
@@ -248,7 +271,6 @@ boardStructure = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 '''
-
 '''
 boardSize = int(input("Please enter the size of the board (side length): "))
 while boardSize < 5:
@@ -256,17 +278,16 @@ while boardSize < 5:
 '''
 depth = int(input("Please enter the depth (must be plural and non-negative): "))
 
-boardSize = 15
+boardSize = 9
 
-nextBoards = nextStep(boardStructure, 1)
+nextBoards = nBoards(boardStructure, 1)
 nextMvScoreList = []
 for nextBoard in nextBoards:
-    boardScore = nextMove(nextBoard, depth, -1, boardSize)
+    boardScore = nextStep(nextBoard, depth, -1, boardSize)
     nextMvScoreList.append(boardScore)
 nextMvScore = max(nextMvScoreList)
 nextMv = nextMvScoreList.index(nextMvScore)
 print(nextMv)
-
 
 start = 0
 k = []
