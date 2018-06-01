@@ -232,11 +232,11 @@ def board_range(board, size, depth):
     return boardRange
 
 # Create new lists based on the next possible move.
-def nBoards(boardStructure, side, rBegin, rStop, cBegin, cStop):
+def nBoards(boardStructure, side, rcBS):
     zeroPos = []
     nextBoards = []
-    for bSi in range(rBegin, rStop):
-        for bsi in range(cBegin, cStop):
+    for bSi in range(rcBS[0], rcBS[1]):
+        for bsi in range(rcBS[2], rcBS[3]):
             zeropos = []
             if boardStructure[bSi][bsi] == 0:
                 zeropos.append(bSi)
@@ -252,7 +252,7 @@ def nBoards(boardStructure, side, rBegin, rStop, cBegin, cStop):
 # Recessive calls to find the next step.
 def nextStep(board, depth, side, size, b_range):
     if depth > 2:
-        nextBoard = nBoards(board, side, b_range[0], b_range[1], b_range[2], b_range[3])
+        nextBoard = nBoards(board, side, b_range)
         boardScore = []
         for next_board in nextBoard:
             boardScore.append(nextStep(next_board, depth - 1, side * -1, size, b_range))
@@ -263,20 +263,20 @@ def nextStep(board, depth, side, size, b_range):
     elif depth == 2:
         global scoreStandard
         scoreStandard = -math.inf
-        nextBoard = nBoards(board, side, b_range[0], b_range[1], b_range[2], b_range[3])
+        nextBoard = nBoards(board, side, b_range)
         for next_board in nextBoard:
             nextStep(next_board, depth - 1, side * -1, size, b_range)
         return scoreStandard
     else:
         if scoreStandard == -math.inf:
             boardScore = []
-            nextBoard = nBoards(board, side, b_range[0], b_range[1], b_range[2], b_range[3])
+            nextBoard = nBoards(board, side, b_range)
             for next_board in nextBoard:
                 boardScore.append(score(next_board, size))
             scoreStandard = max(boardScore)
         else:
             boardScore = []
-            nextBoard = nBoards(board, side, b_range[0], b_range[1], b_range[2], b_range[3])
+            nextBoard = nBoards(board, side, b_range)
             for nBi in range(len(nextBoard)):
                 sC_t = score(nextBoard[nBi], size)
                 if sC_t >= scoreStandard:
@@ -285,6 +285,7 @@ def nextStep(board, depth, side, size, b_range):
                     boardScore.append(sC_t)
             if len(boardScore) == len(nextBoard):
                 scoreStandard = max(boardScore)
+
 ''' 15 * 15
 boardStructure = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
@@ -313,7 +314,7 @@ boardSize = 9
 
 bRange = board_range(boardStructure, boardSize, depth)
 
-nextBoards = nBoards(boardStructure, 1, bRange[0], bRange[1], bRange[2], bRange[3])
+nextBoards = nBoards(boardStructure, 1, bRange)
 nextMvScoreList = []
 for nextBoard in nextBoards:
     boardScore = nextStep(nextBoard, depth - 1, -1, boardSize, bRange)
