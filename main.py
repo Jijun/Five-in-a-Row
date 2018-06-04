@@ -14,9 +14,6 @@ Created on Thu May 17 10:56:45 2018
 import copy
 import math
 
-import time
-y = time.time()
-
 class rearrange:
     def __init__(self, og_board, board_size):
         self.ogBoard = og_board
