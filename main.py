@@ -2,13 +2,16 @@
 """
 Created on Thu May 17 10:56:45 2018
 
-@author: PI-314159265
+@author: Pi-314159265
+@contributor: D. Eggli
 """
 
 ########## Five in a Row ##########
 
+# https://i.imgur.com/mkFFfzz.jpg
+# https://t1.picb.cc/uploads/2018/06/03/2XMXC6.jpg
+
 import copy
-import sys
 import math
 
 import time
@@ -108,7 +111,9 @@ def scoreIndexList(List):
                 negIndexJ = 2.5
             else:
                 negIndexJ = negIndex
-            scoreIndex = float(abs(5 ** (twoIndex - negIndexJ) + 0.9 * negIndex - 0.8 * zeroIndex))
+            scoreIndex = float(abs(5 ** (twoIndex - negIndexJ) + 1.4 * negIndex - 0.9 * zeroIndex))
+            if zeroIndex == 0 and twoIndex > 4:
+                scoreIndex = scoreIndex + 5 ** twoIndex + 100
             for indexListi in range(i, i_test):
                 indexList[indexListi] = int(scoreIndex * 10)
     scoreList = list(map(lambda l, L: l * L, List, indexList))
@@ -186,7 +191,7 @@ def scoreBoard(Row, Col, Dia, Ada):
     return sB
 
 # Calculate the score based on the score board.
-def score(ogBoard, size):
+def score(ogBoard, size, first):
     reArr = rearrange(ogBoard, size)
     sB = scoreBoard(reArr.Row(), reArr.Col(), reArr.Dia(), reArr.Ada())
     del reArr
@@ -197,7 +202,10 @@ def score(ogBoard, size):
     scoreL_noZero = list(filter((0).__ne__, score_L))
     neg_score = sum(negScore for negScore in scoreL_noZero if negScore < 0)
     pos_score = sum(posScore for posScore in scoreL_noZero if posScore > 0)
-    return pos_score + neg_score
+    if first == 1:
+        return pos_score + neg_score
+    else:
+        return 4 * neg_score + pos_score
 
 # Limit next move.
 def board_range(board, size, depth):
@@ -250,90 +258,130 @@ def nBoards(boardStructure, side, rcBS):
     return nextBoards    
 
 # Recessive calls to find the next step.
-def nextStep(board, depth, side, size, b_range):
+def nextStep(board, depth, side, size, b_range, first):
     if depth > 2:
         nextBoard = nBoards(board, side, b_range)
         boardScore = []
         for next_board in nextBoard:
-            boardScore.append(nextStep(next_board, depth - 1, side * -1, size, b_range))
+            boardScore.append(nextStep(next_board, depth - 1, side * -1, size, b_range, first))
         if side > 0:
             return max(boardScore)
         else:
             return min(boardScore)
     elif depth == 2:
         global scoreStandard
-        scoreStandard = -math.inf
+        if side == -1:
+            scoreStandard = math.inf
+        else:
+            scoreStandard = -math.inf
         nextBoard = nBoards(board, side, b_range)
         for next_board in nextBoard:
-            nextStep(next_board, depth - 1, side * -1, size, b_range)
+            nextStep(next_board, depth - 1, side * -1, size, b_range, first)
         return scoreStandard
     else:
-        if scoreStandard == -math.inf:
-            boardScore = []
-            nextBoard = nBoards(board, side, b_range)
-            for next_board in nextBoard:
-                boardScore.append(score(next_board, size))
-            scoreStandard = max(boardScore)
-        else:
-            boardScore = []
-            nextBoard = nBoards(board, side, b_range)
-            for nBi in range(len(nextBoard)):
-                sC_t = score(nextBoard[nBi], size)
+        boardScore = []
+        nextBoard = nBoards(board, side, b_range)
+        for nBi in range(len(nextBoard)):
+            sC_t = score(nextBoard[nBi], size, first)
+            if side == 1:
                 if sC_t >= scoreStandard:
                     break
                 else:
                     boardScore.append(sC_t)
-            if len(boardScore) == len(nextBoard):
+            else:
+                if sC_t <= scoreStandard:
+                    break
+                else:
+                    boardScore.append(sC_t)
+        if len(boardScore) == len(nextBoard):
+            if side == 1:
                 scoreStandard = max(boardScore)
+            else:
+                scoreStandard = min(boardScore)
 
-''' 15 * 15
-boardStructure = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-'''
-'''
-boardSize = int(input("Please enter the size of the board (side length): "))
+# Main function.
+boardSize = int(input("Please enter the side length of the board (must be greater than 5): "))
 while boardSize < 5:
-    boardSize = int(input("Please enter the size of the board (side length): "))
-'''
-depth = int(input("Please enter the depth (must be odd and non-negative): "))
+    boardSize = int(input("Please enter the side length of the board (must be greater than 5): "))
 
-boardSize = 9
+depth = int(input("Please enter the depth (must be greater than 2): "))
+while depth < 3:
+    depth = int(input("Please enter the depth (must be greater than 2): "))
 
-bRange = board_range(boardStructure, boardSize, depth)
+goFirst = input('Who will go first? If the AI will go first, please enter "A"; for others, please enter "B". \n')
+while goFirst != "A" and goFirst != "B" and goFirst != "a" and goFirst != "b":
+    goFirst = input('Who will go first? If the AI will go first, please enter "A"; for others, please enter "B". \n')
 
-nextBoards = nBoards(boardStructure, 1, bRange)
-nextMvScoreList = []
-for nextBoard in nextBoards:
-    boardScore = nextStep(nextBoard, depth - 1, -1, boardSize, bRange)
-    nextMvScoreList.append(boardScore)
-nextMvScore = max(nextMvScoreList)
-nextMv = nextMvScoreList.index(nextMvScore)
-print(nextMv)
+if goFirst == "A" or goFirst == "a":
+    go_first = 1
+else:
+    go_first = -1
+del goFirst
 
-start = 0
-zeroCoord = []
-for board in boardStructure:
-    start = start + board.count(0)
-    zeroCoord.append(start)
-del start
-for zCi in range(len(zeroCoord)):
-    if zeroCoord[zCi] >= nextMv:
-        if zCi != 0:
-            print(zCi + 1, nextMv - zeroCoord[zCi - 1] + 1)
-        else:
-            print("Row 1: {:}".format(nextMv + 1))
-        print(time.time() - y)
-        sys.exit()
+boardStructure = []
+zeroBoardS = [0] * boardSize
+bsize = 0
+while bsize != boardSize:
+    boardStructure.append(zeroBoardS[:])
+    bsize += 1
+del bsize
+del zeroBoardS
+
+if go_first == 1:
+    temp_first = math.floor((boardSize - 1) / 2)
+    boardStructure[temp_first][temp_first] = 1
+    print("\nAI will go (row col): ")
+    print(temp_first + 1, temp_first + 1)
+    del temp_first
+
+otherStep = str(input("Please tell me where did the other person go (row,col; e.g., 5,3; or $$$$$ to exit)? "))
+
+while otherStep != "$$$$$":
+    ns_cood = otherStep.split(",")
+    boardStructure[int(ns_cood[0]) - 1][int(ns_cood[1]) - 1] = -1
+    bRange = board_range(boardStructure, boardSize, depth)
+
+    nextBoards = nBoards(boardStructure, 1, bRange)
+    nextMvScoreList = []
+    for nextBoard in nextBoards:
+        boardScore = nextStep(nextBoard, depth - 1, -1, boardSize, bRange, go_first)
+        nextMvScoreList.append(boardScore)
+    nextMvScore = max(nextMvScoreList)
+    nextMv = nextMvScoreList.index(nextMvScore) + 1
+
+    if bRange[1] - bRange[0] == bRange[3] - bRange[2] and bRange[3] - bRange[2] == boardSize:
+        board_structure = copy.deepcopy(boardStructure)
+    else:
+        board_structure = []
+        for b_si in range(bRange[0], bRange[1]):
+            b_sub_structure = []
+            for b_sii in range(bRange[2], bRange[3]):
+                b_sub_structure.append(boardStructure[b_si][b_sii])
+            board_structure.append(b_sub_structure)
+
+    zeroCoord = []
+    for board in board_structure:
+        start = board.count(0)
+        zeroCoord.append(start)
+    del start
+    start = 0
+    for zCi in range(len(zeroCoord)):
+        start += zeroCoord[zCi]
+        if start >= nextMv:
+            if zCi != 0:
+                nextRow = zCi + 1
+                nextCol = nextMv + zeroCoord[zCi] - start
+            else:
+                nextRow = 1
+                nextCol = nextMv
+            break
+
+    nextRow = nextRow + bRange[0] - 1
+    nextCol = nextCol + bRange[2] - 1
+    nextCol = [nextCol_i for nextCol_i, zero_place in enumerate(boardStructure[nextRow]) if zero_place == 0][nextCol]
+    boardStructure[nextRow][nextCol] = 1
+    nextRow += 1
+    nextCol += 1
+    print("AI chooses to place its stone in row: " + str(nextRow) + " and column: " + str(nextCol))
+    
+    otherStep = str(input("Please tell me where did the other person go (row,col; e.g., 5,3; or $$$$$ to exit)? "))
